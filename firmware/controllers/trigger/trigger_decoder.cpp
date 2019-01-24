@@ -130,6 +130,14 @@ TriggerStateWithRunningStatistics::TriggerStateWithRunningStatistics() :
 		{
 }
 
+void TriggerStateWithRunningStatistics::movePreSynchTimestamps(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
+	// here we take timestamps of event which happened prior to synchronization at place them
+	// at appropriate locations
+	for (int i = 0; i < spinningEventIndex;i++) {
+		timeOfLastEvent[getTriggerSize() - i] = spinningEvents[i];
+	}
+}
+
 float TriggerStateWithRunningStatistics::calculateInstantRpm(int *prevIndex, efitime_t nowNt DECLARE_ENGINE_PARAMETER_SUFFIX) {
 	int current_index = currentCycle.current_index; // local copy so that noone changes the value on us
 	/**
@@ -171,7 +179,13 @@ float TriggerStateWithRunningStatistics::calculateInstantRpm(int *prevIndex, efi
 }
 
 void TriggerStateWithRunningStatistics::setLastEventTimeForInstantRpm(efitime_t nowNt DECLARE_ENGINE_PARAMETER_SUFFIX) {
-	timeOfLastEvent[currentCycle.current_index] = nowNt;
+	if (spinningEventIndex >= PWM_PHASE_MAX_COUNT) {
+		// too many events while trying to find synchronization point
+		// todo: better implementation would be to shift here or use cyclic buffer so that we keep last
+		// 'PWM_PHASE_MAX_COUNT' events
+		return;
+	}
+	spinningEvents[spinningEventIndex++] = nowNt;
 }
 
 void TriggerStateWithRunningStatistics::runtimeStatistics(efitime_t nowNt DECLARE_ENGINE_PARAMETER_SUFFIX) {

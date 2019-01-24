@@ -194,6 +194,7 @@ void RpmCalculator::setSpinningUp(efitime_t nowNt DECLARE_ENGINE_PARAMETER_SUFFI
 	// Only a completely stopped and non-spinning engine can enter the spinning-up state.
 	if (isStopped(PASS_ENGINE_PARAMETER_SIGNATURE) && !isSpinning) {
 		state = SPINNING_UP;
+		engine->triggerCentral.triggerState.spinningEventIndex = 0;
 		isSpinning = true;
 	}
 	// update variables needed by early instant RPM calc.
@@ -238,7 +239,8 @@ void rpmShaftPositionCallback(trigger_event_e ckpSignalType,
 	if (index == 0) {
 		ENGINE(m.beforeRpmCb) = GET_TIMESTAMP();
 
-		bool hadRpmRecently = rpmState->checkIfSpinning(PASS_ENGINE_PARAMETER_SIGNATURE);
+		// WAT? this is some weird code? why stop trigger right from sync callback?
+		bool hadRpmRecently = true;//rpmState->checkIfSpinning(PASS_ENGINE_PARAMETER_SIGNATURE);
 
 		if (hadRpmRecently) {
 			efitime_t diffNt = nowNt - rpmState->lastRpmEventTimeNt;
@@ -273,8 +275,11 @@ void rpmShaftPositionCallback(trigger_event_e ckpSignalType,
 	}
 #endif
 
-	// Replace 'normal' RPM with instant RPM for the initial spin-up period
 	if (rpmState->isSpinningUp(PASS_ENGINE_PARAMETER_SIGNATURE)) {
+		// we are here only once trigger is synchronized for the first time
+		// while transitioning  from 'spinning' to 'running'
+		// Replace 'normal' RPM with instant RPM for the initial spin-up period
+		engine->triggerCentral.triggerState.movePreSynchTimestamps(PASS_ENGINE_PARAMETER_SIGNATURE);
 		int prevIndex;
 		int iRpm = engine->triggerCentral.triggerState.calculateInstantRpm(&prevIndex, nowNt PASS_ENGINE_PARAMETER_SUFFIX);
 		// validate instant RPM - we shouldn't skip the cranking state
