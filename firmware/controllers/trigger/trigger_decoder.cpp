@@ -126,13 +126,8 @@ int TriggerState::getTotalRevolutionCounter() const {
 
 TriggerStateWithRunningStatistics::TriggerStateWithRunningStatistics() :
 		//https://en.cppreference.com/w/cpp/language/zero_initialization
-		instantRpmValue()
+		timeOfLastEvent(), instantRpmValue()
 		{
-	// avoid ill-defined instant RPM when the data is not gathered yet
-	efitime_t nowNt = getTimeNowNt();
-	for (int i = 0; i < PWM_PHASE_MAX_COUNT; i++) {
-		timeOfLastEvent[i] = nowNt;
-	}
 }
 
 float TriggerStateWithRunningStatistics::calculateInstantRpm(int *prevIndex, efitime_t nowNt DECLARE_ENGINE_PARAMETER_SUFFIX) {
@@ -149,7 +144,12 @@ float TriggerStateWithRunningStatistics::calculateInstantRpm(int *prevIndex, efi
 
 	// now let's get precise angle for that event
 	angle_t prevIndexAngle = TRIGGER_SHAPE(eventAngles[*prevIndex]);
-	uint32_t time = nowNt - timeOfLastEvent[*prevIndex];
+	efitime_t timeOfPreviousAngleEvent = timeOfLastEvent[*prevIndex];
+	if (timeOfPreviousAngleEvent == 0) {
+		// that previous angle event has not ever happened yet
+		return prevInstantRpmValue;
+	}
+	uint32_t time = nowNt - timeOfPreviousAngleEvent;
 	angle_t angleDiff = currentAngle - prevIndexAngle;
 	// todo: angle diff should be pre-calculated
 	fixAngle(angleDiff, "angleDiff", CUSTOM_ERR_6561);

@@ -106,15 +106,18 @@ static void doTestFasterEngineSpinningUp60_2(int startUpDelayMs, int expectedRpm
 	setupSimpleTestEngineWithMaf(&eth, IM_SEQUENTIAL, TT_TOOTHED_WHEEL_60_2);
 	eth.moveTimeForwardMs(startUpDelayMs);
 
+	// fire 30 tooth rise/fall signals
 	eth.fireTriggerEvents2(30 /* count */, 1 /*ms*/);
-	eth.fireTriggerEvents2(1, 4);
+	// now fire missed tooth rise/fall
+	eth.fireRise(4 /*ms*/);
+	EXPECT_EQ(0, GET_RPM());
+	eth.fireFall(4 /*ms*/);
 	EXPECT_EQ(expectedRpm, GET_RPM()) << "test RPM with " + std::to_string(startUpDelayMs) + " startUpDelayMs";
 }
 
 TEST(cranking, testFasterEngineSpinningUp60_2) {
-	// I do not get it. Startup delay is affecting instance RPM?
-	// todo: is this feature implementation issue or test framework issue?
-	doTestFasterEngineSpinningUp60_2(0, 220);
-	doTestFasterEngineSpinningUp60_2(100, 89);
+	// and now we see that things do not exactly work?
+	doTestFasterEngineSpinningUp60_2(0, 0);
+	doTestFasterEngineSpinningUp60_2(100, 0);
 	doTestFasterEngineSpinningUp60_2(1000, 0);
 }
