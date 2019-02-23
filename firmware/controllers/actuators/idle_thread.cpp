@@ -247,6 +247,8 @@ static percent_t automaticIdleController() {
 	return newValue;
 }
 
+int idleThreadStackUsage = 0;
+
 class IdleController : public PeriodicController<UTILITY_THREAD_STACK_SIZE> {
 public:
 	IdleController() : PeriodicController("IdleValve") { }
@@ -293,6 +295,8 @@ private:
 
 		finishIdleTestIfNeeded();
 		undoIdleBlipIfNeeded();
+
+		idleThreadStackUsage = getRemainingStack(chThdGetSelfX());
 
 		float clt = engine->sensors.clt;
 #if EFI_SHAFT_POSITION_INPUT
