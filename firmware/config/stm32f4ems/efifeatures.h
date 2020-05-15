@@ -239,7 +239,7 @@
 #endif
 
 #ifndef EFI_USB_SERIAL
-#define EFI_USB_SERIAL TRUE
+//#define EFI_USB_SERIAL TRUE
 #endif
 
 /**
@@ -331,8 +331,10 @@
 
 // todo: start using consoleUartDevice? Not sure
 #ifndef EFI_CONSOLE_SERIAL_DEVICE
-#define EFI_CONSOLE_SERIAL_DEVICE (&SD3)
+//#define EFI_CONSOLE_SERIAL_DEVICE (&SD3)
 #endif
+
+#define EFI_CONSOLE_UART_DEVICE (&UARTD4)
 
 /**
  * Use 'HAL_USE_UART' DMA-mode driver instead of 'HAL_USE_SERIAL'
@@ -342,10 +344,12 @@
  *  STM32_UART_USE_USARTx
  * in mcuconf.h
  */
-#define TS_UART_DMA_MODE FALSE
+#define TS_UART_DMA_MODE TRUE
 
 //#define TS_UART_DEVICE (&UARTD3)
 #define TS_SERIAL_DEVICE (&SD3)
+#define TS_UART_DEVICE (&UARTD3)
+//#define TS_SERIAL_DEVICE (&SD3)
 
 #define AUX_SERIAL_DEVICE (&SD6)
 
@@ -353,6 +357,12 @@
 #if (TS_UART_DMA_MODE || TS_UART_MODE)
 #undef EFI_CONSOLE_SERIAL_DEVICE
 #endif
+
+#undef EFI_CONSOLE_TX_BRAIN_PIN
+#define EFI_CONSOLE_TX_BRAIN_PIN GPIOA_0
+
+#undef EFI_CONSOLE_RX_BRAIN_PIN
+#define EFI_CONSOLE_RX_BRAIN_PIN GPIOA_1
 
 // todo: start using consoleSerialTxPin? Not sure
 #ifndef EFI_CONSOLE_TX_BRAIN_PIN
