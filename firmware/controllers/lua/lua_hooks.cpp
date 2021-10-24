@@ -343,10 +343,9 @@ static int lua_setFuelMult(lua_State* l) {
 
 struct LuaCanReciever;
 
-// linked list of all CAN receivers
-static LuaCanReciever *list;
-
 struct LuaCanReciever {
+	// linked list of all CAN receivers
+	static LuaCanReciever *list;
 
 	LuaCanReciever *next;
 
