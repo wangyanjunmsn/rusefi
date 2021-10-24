@@ -1,4 +1,4 @@
-// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on config/boards/subaru_eg33/config/gen_config.sh integration/rusefi_config.txt Mon Oct 04 15:11:34 UTC 2021
+// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on config/boards/subaru_eg33/config/gen_config.sh integration/rusefi_config.txt Sun Oct 24 03:07:26 UTC 2021
 // by class com.rusefi.output.CHeaderConsumer
 // begin
 #pragma once
@@ -762,8 +762,9 @@ struct engine_configuration_s {
 	offset 76 bit 18 */
 	bool useInstantRpmForIdle : 1;
 	/**
+	 * This uses separate ignition timing and VE tables not only for idle conditions, also during the postcranking-to-idle taper transition (See also afterCrankingIACtaperDuration).
 	offset 76 bit 19 */
-	bool unused76b19 : 1;
+	bool useSeparateIdleTablesForCrankingTaper : 1;
 	/**
 	offset 76 bit 20 */
 	bool launchControlEnabled : 1;
@@ -862,7 +863,6 @@ struct engine_configuration_s {
 	 */
 	uint16_t etbRevLimitRange;
 	/**
-	 * @see hasMapSensor
 	 * @see isMapAveragingEnabled
 	 * offset 108
 	 */
@@ -1212,9 +1212,27 @@ struct engine_configuration_s {
 	 */
 	float manIdlePosition;
 	/**
+	 * Ignition timing to remove when a knock event occurs.
+	%
 	 * offset 612
 	 */
-	float unused612;
+	uint8_t knockRetardAggression;
+	/**
+	 * After a knock event, reapply timing at this rate.
+	deg/s
+	 * offset 613
+	 */
+	uint8_t knockRetardReapplyRate;
+	/**
+	 * Maximum amount of knock retard.
+	deg
+	 * offset 614
+	 */
+	uint8_t knockRetardMaximum;
+	/**
+	 * offset 615
+	 */
+	uint8_t unused615;
 	/**
 	 * offset 616
 	 */
@@ -2032,10 +2050,10 @@ struct engine_configuration_s {
 	bool unusedBit_251_29 : 1;
 	/**
 	offset 976 bit 30 */
-	bool unusedBit_299_30 : 1;
+	bool unusedBit_302_30 : 1;
 	/**
 	offset 976 bit 31 */
-	bool unusedBit_299_31 : 1;
+	bool unusedBit_302_31 : 1;
 	/**
 	 * offset 980
 	 */
@@ -2882,22 +2900,22 @@ struct engine_configuration_s {
 	roc
 	 * offset 2060
 	 */
-	float engineLoadDecelEnleanmentThreshold;
+	float unusedEL1;
 	/**
 	coeff
 	 * offset 2064
 	 */
-	float engineLoadDecelEnleanmentMultiplier;
+	float unusedEL2;
 	/**
 	roc
 	 * offset 2068
 	 */
-	float engineLoadAccelEnrichmentThreshold;
+	float unusedEL3;
 	/**
 	coeff
 	 * offset 2072
 	 */
-	float engineLoadAccelEnrichmentMultiplier;
+	float unusedEL4;
 	/**
 	 * Band rate for primary TTL
 	BPs
@@ -2982,8 +3000,9 @@ struct engine_configuration_s {
 	offset 2116 bit 2 */
 	bool can2WriteEnabled : 1;
 	/**
+	 * Enable if DC-motor driver (H-bridge) inverts the signals (eg. RZ7899 on Hellen boards)
 	offset 2116 bit 3 */
-	bool unused1126 : 1;
+	bool stepperDcInvertedPins : 1;
 	/**
 	offset 2116 bit 4 */
 	bool unused1127 : 1;
@@ -2998,76 +3017,76 @@ struct engine_configuration_s {
 	bool unused1130 : 1;
 	/**
 	offset 2116 bit 8 */
-	bool unusedBit_510_8 : 1;
+	bool unusedBit_513_8 : 1;
 	/**
 	offset 2116 bit 9 */
-	bool unusedBit_510_9 : 1;
+	bool unusedBit_513_9 : 1;
 	/**
 	offset 2116 bit 10 */
-	bool unusedBit_510_10 : 1;
+	bool unusedBit_513_10 : 1;
 	/**
 	offset 2116 bit 11 */
-	bool unusedBit_510_11 : 1;
+	bool unusedBit_513_11 : 1;
 	/**
 	offset 2116 bit 12 */
-	bool unusedBit_510_12 : 1;
+	bool unusedBit_513_12 : 1;
 	/**
 	offset 2116 bit 13 */
-	bool unusedBit_510_13 : 1;
+	bool unusedBit_513_13 : 1;
 	/**
 	offset 2116 bit 14 */
-	bool unusedBit_510_14 : 1;
+	bool unusedBit_513_14 : 1;
 	/**
 	offset 2116 bit 15 */
-	bool unusedBit_510_15 : 1;
+	bool unusedBit_513_15 : 1;
 	/**
 	offset 2116 bit 16 */
-	bool unusedBit_510_16 : 1;
+	bool unusedBit_513_16 : 1;
 	/**
 	offset 2116 bit 17 */
-	bool unusedBit_510_17 : 1;
+	bool unusedBit_513_17 : 1;
 	/**
 	offset 2116 bit 18 */
-	bool unusedBit_510_18 : 1;
+	bool unusedBit_513_18 : 1;
 	/**
 	offset 2116 bit 19 */
-	bool unusedBit_510_19 : 1;
+	bool unusedBit_513_19 : 1;
 	/**
 	offset 2116 bit 20 */
-	bool unusedBit_510_20 : 1;
+	bool unusedBit_513_20 : 1;
 	/**
 	offset 2116 bit 21 */
-	bool unusedBit_510_21 : 1;
+	bool unusedBit_513_21 : 1;
 	/**
 	offset 2116 bit 22 */
-	bool unusedBit_510_22 : 1;
+	bool unusedBit_513_22 : 1;
 	/**
 	offset 2116 bit 23 */
-	bool unusedBit_510_23 : 1;
+	bool unusedBit_513_23 : 1;
 	/**
 	offset 2116 bit 24 */
-	bool unusedBit_510_24 : 1;
+	bool unusedBit_513_24 : 1;
 	/**
 	offset 2116 bit 25 */
-	bool unusedBit_510_25 : 1;
+	bool unusedBit_513_25 : 1;
 	/**
 	offset 2116 bit 26 */
-	bool unusedBit_510_26 : 1;
+	bool unusedBit_513_26 : 1;
 	/**
 	offset 2116 bit 27 */
-	bool unusedBit_510_27 : 1;
+	bool unusedBit_513_27 : 1;
 	/**
 	offset 2116 bit 28 */
-	bool unusedBit_510_28 : 1;
+	bool unusedBit_513_28 : 1;
 	/**
 	offset 2116 bit 29 */
-	bool unusedBit_510_29 : 1;
+	bool unusedBit_513_29 : 1;
 	/**
 	offset 2116 bit 30 */
-	bool unusedBit_510_30 : 1;
+	bool unusedBit_513_30 : 1;
 	/**
 	offset 2116 bit 31 */
-	bool unusedBit_510_31 : 1;
+	bool unusedBit_513_31 : 1;
 	/**
 	 * set can_mode X
 	 * offset 2120
@@ -3128,10 +3147,11 @@ struct engine_configuration_s {
 	 */
 	float mapAccelTaperMult[MAP_ACCEL_TAPER];
 	/**
-	 * todo: rename to fsioAnalogInputs
+	 * EGO value correction
+	value
 	 * offset 2200
 	 */
-	adc_channel_e fsioAdc[AUX_ANALOG_INPUT_COUNT];
+	float unusedAnotherOneOfThose;
 	/**
 	 * Fixed timing, useful for TDC testing
 	deg
@@ -3260,7 +3280,11 @@ struct engine_configuration_s {
 	units
 	 * offset 2331
 	 */
-	uint8_t unusedOldBiquad[9];
+	uint8_t unusedOldBiquad[1];
+	/**
+	 * offset 2332
+	 */
+	adc_channel_e auxAnalogInputs[AUX_ANALOG_INPUT_COUNT];
 	/**
 	 * offset 2340
 	 */
@@ -3367,10 +3391,27 @@ struct engine_configuration_s {
 	 */
 	pid_s etbWastegatePid;
 	/**
-	units
+	 * For micro-stepping, make sure that PWM frequency (etbFreq) is high enough
 	 * offset 2536
 	 */
-	uint8_t unused2536[4];
+	stepper_num_micro_steps_e stepperNumMicroSteps;
+	/**
+	 * Use to limit the current when the stepper motor is idle, not moving (100% = no limit)
+	%
+	 * offset 2537
+	 */
+	uint8_t stepperMinDutyCycle;
+	/**
+	 * Use to limit the max.current through the stepper motor (100% = no limit)
+	%
+	 * offset 2538
+	 */
+	uint8_t stepperMaxDutyCycle;
+	/**
+	units
+	 * offset 2539
+	 */
+	uint8_t unused2536;
 	/**
 	 * per-cylinder timing correction
 	deg
@@ -4352,4 +4393,4 @@ struct persistent_config_s {
 };
 
 // end
-// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on config/boards/subaru_eg33/config/gen_config.sh integration/rusefi_config.txt Mon Oct 04 15:11:34 UTC 2021
+// this section was generated automatically by rusEFI tool ConfigDefinition.jar based on config/boards/subaru_eg33/config/gen_config.sh integration/rusefi_config.txt Sun Oct 24 03:07:26 UTC 2021

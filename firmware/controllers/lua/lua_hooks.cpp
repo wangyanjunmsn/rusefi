@@ -59,10 +59,17 @@ static int lua_getAuxAnalog(lua_State* l) {
 	return getSensor(l, type);
 }
 
-static int lua_getSensor(lua_State* l) {
+static int lua_getSensorByIndex(lua_State* l) {
 	auto sensorIndex = luaL_checkinteger(l, 1);
 
 	return getSensor(l, static_cast<SensorType>(sensorIndex));
+}
+
+static int lua_getSensorByName(lua_State* l) {
+	auto sensorName = luaL_checklstring(l, 1, nullptr);
+	SensorType type = findSensorTypeByName(sensorName);
+
+	return getSensor(l, type);
 }
 
 static int lua_getSensorRaw(lua_State* l) {
@@ -283,7 +290,7 @@ static int lua_getAirmass(lua_State* l) {
 		return luaL_error(l, "null airmass");
 	}
 
-	auto rpm = Sensor::get(SensorType::Rpm).value_or(0);
+	auto rpm = Sensor::getOrZero(SensorType::Rpm);
 	auto result = airmass->getAirmass(rpm).CylinderAirmass;
 
 	lua_pushnumber(l, result);
@@ -333,6 +340,58 @@ static int lua_setFuelMult(lua_State* l) {
 }
 #endif // EFI_UNIT_TEST
 
+
+struct LuaCanReciever;
+
+// linked list of all CAN receivers
+static LuaCanReciever *list;
+
+struct LuaCanReciever {
+
+	LuaCanReciever *next;
+
+	~LuaCanReciever() {
+		LuaCanReciever *current, *tmp;
+		// find self in list and remove self
+		LL_FOREACH_SAFE(list, current, tmp)
+		{
+			if (current == this) {
+				LL_DELETE(list, current);
+			}
+		}
+	}
+
+	LuaCanReciever() {
+		LL_PREPEND(list, this);
+	}
+
+
+};
+
+struct LuaSensor : public StoredValueSensor {
+	LuaSensor() : LuaSensor("Invalid") { }
+
+	~LuaSensor() {
+		unregister();
+	}
+
+	LuaSensor(const char* name)
+		: StoredValueSensor(findSensorTypeByName(name), MS2NT(100))
+	{
+		Register();
+	}
+
+	void set(float value) {
+		setValidValue(value, getTimeNowNt());
+	}
+
+	void invalidate() {
+		StoredValueSensor::invalidate();
+	}
+
+	void showInfo(const char*) const {}
+};
+
 void configureRusefiLuaHooks(lua_State* l) {
 
 	LuaClass<Timer> luaTimer(l, "Timer");
@@ -341,10 +400,22 @@ void configureRusefiLuaHooks(lua_State* l) {
 		.fun("reset",             static_cast<void (Timer::*)()     >(&Timer::reset            ))
 		.fun("getElapsedSeconds", static_cast<float(Timer::*)()const>(&Timer::getElapsedSeconds));
 
+	LuaClass<LuaCanReciever> luaCanReciever(l, "CanReciever");
+	luaCanReciever
+		.ctor()
+		;
+
+	LuaClass<LuaSensor> luaSensor(l, "Sensor");
+	luaSensor
+		.ctor<const char*>()
+		.fun("set", &LuaSensor::set)
+		.fun("invalidate", &LuaSensor::invalidate);
+
 	lua_register(l, "print", lua_efi_print);
 	lua_register(l, "readPin", lua_readpin);
 	lua_register(l, "getAuxAnalog", lua_getAuxAnalog);
-	lua_register(l, "getSensor", lua_getSensor);
+	lua_register(l, "getSensorByIndex", lua_getSensorByIndex);
+	lua_register(l, "getSensor", lua_getSensorByName);
 	lua_register(l, "getSensorRaw", lua_getSensorRaw);
 	lua_register(l, "hasSensor", lua_hasSensor);
 	lua_register(l, "table3d", lua_table3d);

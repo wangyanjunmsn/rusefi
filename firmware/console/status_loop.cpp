@@ -199,7 +199,7 @@ void printOverallStatus(efitimesec_t nowSeconds) {
 	}
 	timeOfPreviousPrintVersion = nowSeconds;
 	int seconds = getTimeNowSeconds();
-	printCurrentState(&logger, seconds, getConfigurationName(engineConfiguration->engineType), FIRMWARE_ID);
+	printCurrentState(&logger, seconds, getEngine_type_e(engineConfiguration->engineType), FIRMWARE_ID);
 #if EFI_PROD_CODE
 	printOutPin(PROTOCOL_CRANK1, CONFIG(triggerInputPins)[0]);
 	printOutPin(PROTOCOL_CRANK2, CONFIG(triggerInputPins)[1]);
@@ -357,7 +357,7 @@ class CommunicationBlinkingTask : public PeriodicTimerController {
 	void PeriodicTask() override {
 		counter++;
 
-		bool lowVBatt = Sensor::get(SensorType::BatteryVoltage).value_or(0) < LOW_VBATT;
+		bool lowVBatt = Sensor::getOrZero(SensorType::BatteryVoltage) < LOW_VBATT;
 
 		if (counter == 1) {
 			// first invocation of BlinkingTask
@@ -493,11 +493,11 @@ static void updateThrottles() {
 }
 
 static void updateLambda() {
-	float lambdaValue = Sensor::get(SensorType::Lambda1).value_or(0);
+	float lambdaValue = Sensor::getOrZero(SensorType::Lambda1);
 	tsOutputChannels.lambda = lambdaValue;
 	tsOutputChannels.airFuelRatio = lambdaValue * ENGINE(engineState.stoichiometricRatio);
 
-	float lambda2Value = Sensor::get(SensorType::Lambda2).value_or(0);
+	float lambda2Value = Sensor::getOrZero(SensorType::Lambda2);
 	tsOutputChannels.lambda2 = lambda2Value;
 	tsOutputChannels.airFuelRatio2 = lambda2Value * ENGINE(engineState.stoichiometricRatio);
 }
@@ -510,7 +510,7 @@ static void updateFuelSensors() {
 
 	tsOutputChannels.flexPercent = Sensor::get(SensorType::FuelEthanolPercent).Value;
 
-	tsOutputChannels.fuelTankLevel = Sensor::get(SensorType::FuelLevel).value_or(0);
+	tsOutputChannels.fuelTankLevel = Sensor::getOrZero(SensorType::FuelLevel);
 }
 
 static void updateVvtSensors() {
@@ -525,7 +525,7 @@ static void updateVvtSensors() {
 
 static void updateVehicleSpeed(int rpm) {
 #if EFI_VEHICLE_SPEED
-	float vehicleSpeed = Sensor::get(SensorType::VehicleSpeed).value_or(0);
+	float vehicleSpeed = Sensor::getOrZero(SensorType::VehicleSpeed);
 	tsOutputChannels.vehicleSpeedKph = vehicleSpeed;
 	tsOutputChannels.speedToRpmRatio = vehicleSpeed / rpm;
 #endif /* EFI_VEHICLE_SPEED */
@@ -547,6 +547,26 @@ static void updateRawSensors() {
 	tsOutputChannels.rawWastegatePositionSensor = Sensor::getRaw(SensorType::WastegatePosition);
 	tsOutputChannels.rawIdlePositionSensor = Sensor::getRaw(SensorType::IdlePosition);
 }
+static void updatePressures() {
+	tsOutputChannels.baroPressure = Sensor::getOrZero(SensorType::BarometricPressure);
+	tsOutputChannels.manifoldAirPressure = Sensor::getOrZero(SensorType::Map);
+	tsOutputChannels.oilPressure = Sensor::get(SensorType::OilPressure).Value;
+}
+
+static void updateMiscSensors() {
+	tsOutputChannels.vBatt = Sensor::getOrZero(SensorType::BatteryVoltage);
+	
+	tsOutputChannels.idlePositionSensor = Sensor::getOrZero(SensorType::IdlePosition);
+
+	tsOutputChannels.wastegatePosition = Sensor::getOrZero(SensorType::WastegatePosition);
+
+#if	HAL_USE_ADC
+	tsOutputChannels.internalMcuTemperature = getMCUInternalTemperature();
+#endif /* HAL_USE_ADC */
+
+	// tCharge depends on the previous state, so we should use the stored value.
+	tsOutputChannels.tCharge = ENGINE(engineState.sd.tCharge);
+}
 
 static void updateSensors(int rpm) {
 	updateTempSensors();
@@ -556,23 +576,8 @@ static void updateSensors(int rpm) {
 	updateFuelSensors();
 	updateVvtSensors();
 	updateVehicleSpeed(rpm);
-
-	tsOutputChannels.vBatt = Sensor::get(SensorType::BatteryVoltage).value_or(0);
-	tsOutputChannels.baroPressure = Sensor::get(SensorType::BarometricPressure).value_or(0);
-	tsOutputChannels.manifoldAirPressure = Sensor::get(SensorType::Map).value_or(0);
-
-	tsOutputChannels.oilPressure = Sensor::get(SensorType::OilPressure).Value;
-
-	tsOutputChannels.idlePositionSensor = Sensor::get(SensorType::IdlePosition).value_or(0);
-
-	tsOutputChannels.wastegatePosition = Sensor::get(SensorType::WastegatePosition).value_or(0);
-
-#if	HAL_USE_ADC
-	tsOutputChannels.internalMcuTemperature = getMCUInternalTemperature();
-#endif /* HAL_USE_ADC */
-
-	// tCharge depends on the previous state, so we should use the stored value.
-	tsOutputChannels.tCharge = ENGINE(engineState.sd.tCharge);
+	updatePressures();
+	updateMiscSensors();
 }
 
 static void updateFuelCorrections() {
@@ -657,6 +662,22 @@ static void updateFlags() {
 #endif /* EFI_INTERNAL_FLASH */
 }
 
+// weird thing: one of the reasons for this to be a separate method is stack usage reduction in non-optimized build
+// see https://github.com/rusefi/rusefi/issues/3302 and linked tickets
+static void updateTpsDebug() {
+	// TPS 1 pri/sec split
+	tsOutputChannels.debugFloatField1 = Sensor::getOrZero(SensorType::Tps1Primary) - Sensor::getOrZero(SensorType::Tps1Secondary);
+	// TPS 2 pri/sec split
+	tsOutputChannels.debugFloatField2 = Sensor::getOrZero(SensorType::Tps2Primary) - Sensor::getOrZero(SensorType::Tps2Secondary);
+	// TPS1 - TPS2 split
+	tsOutputChannels.debugFloatField3 = Sensor::getOrZero(SensorType::Tps1) - Sensor::getOrZero(SensorType::Tps2);
+	// Pedal pri/sec split
+	tsOutputChannels.debugFloatField4 = Sensor::getOrZero(SensorType::AcceleratorPedalPrimary) - Sensor::getOrZero(SensorType::AcceleratorPedalSecondary);
+
+	// TPS 1 pri/sec ratio - useful for ford ETB that has partial-range second channel
+	tsOutputChannels.debugFloatField5 = 100 * Sensor::getOrZero(SensorType::Tps1Primary) / Sensor::getOrZero(SensorType::Tps1Secondary);
+}
+
 void updateTunerStudioState(TunerStudioOutputChannels *tsOutputChannels DECLARE_ENGINE_PARAMETER_SUFFIX) {
 #if EFI_SHAFT_POSITION_INPUT
 	int rpm = Sensor::get(SensorType::Rpm).Value;
@@ -710,6 +731,9 @@ void updateTunerStudioState(TunerStudioOutputChannels *tsOutputChannels DECLARE_
 	tsOutputChannels->accelerationX = engine->sensors.accelerometer.x;
 	// 278
 	tsOutputChannels->accelerationY = engine->sensors.accelerometer.y;
+	tsOutputChannels->accelerationZ = engine->sensors.accelerometer.z;
+	tsOutputChannels->accelerationRoll = engine->sensors.accelerometer.roll;
+	tsOutputChannels->accelerationYaw = engine->sensors.accelerometer.yaw;
 
 #if EFI_DYNO_VIEW
 	tsOutputChannels->VssAcceleration = getDynoviewAcceleration(PASS_ENGINE_PARAMETER_SIGNATURE);
@@ -727,10 +751,6 @@ void updateTunerStudioState(TunerStudioOutputChannels *tsOutputChannels DECLARE_
 #endif /* EFI_HIP_9011 */
 
 	tsOutputChannels->tpsAccelFuel = engine->engineState.tpsAccelEnrich;
-
-	tsOutputChannels->engineLoadAccelExtra = engine->engineLoadAccelEnrichment.getEngineLoadEnrichment(PASS_ENGINE_PARAMETER_SIGNATURE) * 100 / Sensor::get(SensorType::Map).value_or(0);
-
-	tsOutputChannels->engineLoadDelta = engine->engineLoadAccelEnrichment.getMaxDelta();
 
 	tsOutputChannels->checkEngine = hasErrorCodes();
 
@@ -785,9 +805,9 @@ void updateTunerStudioState(TunerStudioOutputChannels *tsOutputChannels DECLARE_
 // no one uses shaft so far		tsOutputChannels->debugIntField3 = engine->triggerCentral.getHwEventCounter((int)SHAFT_3RD_FALLING);
 #if EFI_PROD_CODE && HAL_USE_ICU == TRUE
 		tsOutputChannels->debugIntField3 = icuRisingCallbackCounter + icuFallingCallbackCounter;
-		tsOutputChannels->debugIntField4 = engine->triggerCentral.vvtEventRiseCounter;
-		tsOutputChannels->debugIntField5 = engine->triggerCentral.vvtEventFallCounter;
 #endif /* EFI_PROD_CODE */
+		tsOutputChannels->debugIntField4 = engine->triggerCentral.vvtEventRiseCounter[0];
+		tsOutputChannels->debugIntField5 = engine->triggerCentral.vvtEventFallCounter[0];
 
 		tsOutputChannels->debugFloatField1 = engine->triggerCentral.getHwEventCounter((int)SHAFT_PRIMARY_RISING);
 		tsOutputChannels->debugFloatField2 = engine->triggerCentral.getHwEventCounter((int)SHAFT_SECONDARY_RISING);
@@ -797,35 +817,6 @@ void updateTunerStudioState(TunerStudioOutputChannels *tsOutputChannels DECLARE_
 
 		// debugFloatField6 used
 		// no one uses shaft so far		tsOutputChannels->debugFloatField3 = engine->triggerCentral.getHwEventCounter((int)SHAFT_3RD_RISING);
-		break;
-	case DBG_FSIO_ADC:
-		// todo: implement a proper loop
-		if (isAdcChannelValid(engineConfiguration->fsioAdc[0])) {
-			tsOutputChannels->debugFloatField1 = getVoltage("fsio", engineConfiguration->fsioAdc[0] PASS_ENGINE_PARAMETER_SUFFIX);
-		}
-		break;
-	case DBG_FSIO_EXPRESSION_1_7:
-#if EFI_FSIO
-		tsOutputChannels->debugFloatField1 = getFsioOutputValue(0 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField2 = getFsioOutputValue(1 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField3 = getFsioOutputValue(2 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField4 = getFsioOutputValue(3 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField5 = getFsioOutputValue(4 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField6 = getFsioOutputValue(5 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField7 = getFsioOutputValue(6 PASS_ENGINE_PARAMETER_SUFFIX);
-		break;
-	case DBG_FSIO_EXPRESSION_8_14:
-		tsOutputChannels->debugFloatField1 = getFsioOutputValue(7 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField2 = getFsioOutputValue(8 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField3 = getFsioOutputValue(9 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField4 = getFsioOutputValue(10 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField5 = getFsioOutputValue(11 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField6 = getFsioOutputValue(12 PASS_ENGINE_PARAMETER_SUFFIX);
-		tsOutputChannels->debugFloatField7 = getFsioOutputValue(13 PASS_ENGINE_PARAMETER_SUFFIX);
-		break;
-#endif /* EFI_FSIO */
-	case DBG_VEHICLE_SPEED_SENSOR:
-		tsOutputChannels->debugIntField1 = engine->engineState.vssEventCounter;
 		break;
 	case DBG_CRANKING_DETAILS:
 		tsOutputChannels->debugIntField1 = engine->rpmCalculator.getRevolutionCounterSinceStart();
@@ -853,26 +844,11 @@ void updateTunerStudioState(TunerStudioOutputChannels *tsOutputChannels DECLARE_
 		break;
 #endif /* EFI_CAN_SUPPORT */
 	case DBG_ANALOG_INPUTS:
-		tsOutputChannels->debugFloatField1 = isAdcChannelValid(engineConfiguration->vbattAdcChannel) ? getVoltageDivided("vbatt", engineConfiguration->vbattAdcChannel PASS_ENGINE_PARAMETER_SUFFIX) : 0.0f;
-		tsOutputChannels->debugFloatField2 = Sensor::getRaw(SensorType::Tps1);
-		tsOutputChannels->debugFloatField3 = isAdcChannelValid(engineConfiguration->mafAdcChannel) ? getVoltageDivided("maf", engineConfiguration->mafAdcChannel PASS_ENGINE_PARAMETER_SUFFIX) : 0.0f;
 		tsOutputChannels->debugFloatField4 = isAdcChannelValid(engineConfiguration->map.sensor.hwChannel) ? getVoltageDivided("map", engineConfiguration->map.sensor.hwChannel PASS_ENGINE_PARAMETER_SUFFIX) : 0.0f;
-		tsOutputChannels->debugFloatField5 = isAdcChannelValid(engineConfiguration->clt.adcChannel) ? getVoltageDivided("clt", engineConfiguration->clt.adcChannel PASS_ENGINE_PARAMETER_SUFFIX) : 0.0f;
-		tsOutputChannels->debugFloatField6 = isAdcChannelValid(engineConfiguration->iat.adcChannel) ? getVoltageDivided("iat", engineConfiguration->iat.adcChannel PASS_ENGINE_PARAMETER_SUFFIX) : 0.0f;
 		tsOutputChannels->debugFloatField7 = isAdcChannelValid(engineConfiguration->afr.hwChannel) ? getVoltageDivided("ego", engineConfiguration->afr.hwChannel PASS_ENGINE_PARAMETER_SUFFIX) : 0.0f;
 		break;
 	case DBG_ANALOG_INPUTS2:
-		// TPS 1 pri/sec split
-		tsOutputChannels->debugFloatField1 = Sensor::get(SensorType::Tps1Primary).value_or(0) - Sensor::get(SensorType::Tps1Secondary).value_or(0);
-		// TPS 2 pri/sec split
-		tsOutputChannels->debugFloatField2 = Sensor::get(SensorType::Tps2Primary).value_or(0) - Sensor::get(SensorType::Tps2Secondary).value_or(0);
-		// TPS1 - TPS2 split
-		tsOutputChannels->debugFloatField3 = Sensor::get(SensorType::Tps1).value_or(0) - Sensor::get(SensorType::Tps2).value_or(0);
-		// Pedal pri/sec split
-		tsOutputChannels->debugFloatField4 = Sensor::get(SensorType::AcceleratorPedalPrimary).value_or(0) - Sensor::get(SensorType::AcceleratorPedalSecondary).value_or(0);
-
-		// TPS 1 pri/sec ratio - useful for ford ETB that has partial-range second channel
-		tsOutputChannels->debugFloatField5 = 100 * Sensor::get(SensorType::Tps1Primary).value_or(0) / Sensor::get(SensorType::Tps1Secondary).value_or(0);
+		updateTpsDebug();
 		break;
 	case DBG_INSTANT_RPM:
 		{

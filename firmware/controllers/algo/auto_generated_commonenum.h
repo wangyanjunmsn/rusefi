@@ -1,4 +1,4 @@
-// was generated automatically by rusEFI tool  from rusefi_enums.h // by enum2string.jar tool on Thu Sep 30 19:30:21 UTC 2021
+// was generated automatically by rusEFI tool  from rusefi_enums.h // by enum2string.jar tool on Sat Oct 23 23:39:23 EDT 2021
 // see also gen_config_and_enums.bat
 
 
@@ -18,11 +18,9 @@ const char *getCan_nbc_e(can_nbc_e value);
 const char *getCan_vss_nbc_e(can_vss_nbc_e value);
 const char *getChamber_style_e(chamber_style_e value);
 const char *getCranking_ignition_mode_e(cranking_ignition_mode_e value);
-const char *getDebug_mode_e(debug_mode_e value);
 const char *getDisplay_mode_e(display_mode_e value);
 const char *getEgo_sensor_e(ego_sensor_e value);
 const char *getEngine_load_mode_e(engine_load_mode_e value);
-const char *getEngine_type_e(engine_type_e value);
 const char *getEtb_function_e(etb_function_e value);
 const char *getGear_e(gear_e value);
 const char *getGppwm_channel_e(gppwm_channel_e value);
@@ -43,6 +41,7 @@ const char *getPin_output_mode_e(pin_output_mode_e value);
 const char *getSensor_chart_e(sensor_chart_e value);
 const char *getSpi_device_e(spi_device_e value);
 const char *getSpi_speed_e(spi_speed_e value);
+const char *getStepper_num_micro_steps_e(stepper_num_micro_steps_e value);
 const char *getTChargeMode_e(tChargeMode_e value);
 const char *getTiming_mode_e(timing_mode_e value);
 const char *getTle8888_mode_e(tle8888_mode_e value);

@@ -29,6 +29,7 @@
 #include "trigger_misc.h"
 #include "trigger_mitsubishi.h"
 #include "trigger_subaru.h"
+#include "trigger_suzuki.h"
 #include "trigger_structure.h"
 #include "trigger_toyota.h"
 #include "trigger_renix.h"
@@ -509,6 +510,9 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e ambiguousOperat
 		break;
 
 	case TT_SUZUKI_G13B:
+		initializeSuzukiG13B(this);
+		break;
+
 	case TT_FORD_TFI_PIP:
 		configureFordPip(this);
 		break;
@@ -650,11 +654,7 @@ void TriggerWaveform::initializeTriggerWaveform(operation_mode_e ambiguousOperat
 		configureHondaK_12_1(this);
 		break;
 
-	case TT_HONDA_4_24_1:
-		configureHonda_1_4_24(this, true, true, T_CHANNEL_3, T_PRIMARY, 0);
-		shapeWithoutTdc = true;
-		break;
-
+	case TT_UNUSED_10:
 	case TT_HONDA_4_24:
 		configureHonda_1_4_24(this, false, true, T_NONE, T_PRIMARY, 0);
 		shapeWithoutTdc = true;

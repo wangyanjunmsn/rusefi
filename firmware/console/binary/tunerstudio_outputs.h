@@ -141,9 +141,9 @@ struct TunerStudioOutputChannels {
 	scaled_channel<int16_t, 1000> wallFuelCorrection; // 74
 	
 	// TPS/load AE
-	scaled_percent engineLoadDelta; // 76
+	scaled_percent unused76; // 76
 	scaled_percent deltaTps; // 78
-	scaled_percent engineLoadAccelExtra; // 80
+	scaled_percent unused80; // 80
 	scaled_ms tpsAccelFuel; // 82
 
 	// Ignition
@@ -170,9 +170,9 @@ struct TunerStudioOutputChannels {
 	scaled_channel<float> knockLevel; // 108
 
 	// Mode, firmware, protocol, run time
-	uint32_t timeSeconds; // 112
-	uint32_t engineMode; // 116
-	uint32_t firmwareVersion; // 120
+	scaled_channel<uint32_t> timeSeconds; // 112
+	scaled_channel<uint32_t> engineMode; // 116
+	scaled_channel<uint32_t> firmwareVersion; // 120
 	// todo: this not needed in light of TS_SIGNATURE but rusEFI console still uses it. Need to migrate
 	// rusEFI console from TS_FILE_VERSION to TS_SIGNATURE :(
 
@@ -221,8 +221,8 @@ struct TunerStudioOutputChannels {
 	scaled_channel<uint16_t> debugIntField5; // 210
 
 	// accelerometer
-	int16_t accelerationX; // 212
-	int16_t accelerationY; // 214
+	scaled_channel<int16_t, PACK_MULT_PERCENT> accelerationX; // 212
+	scaled_channel<int16_t, PACK_MULT_PERCENT> accelerationY; // 214
 
 	// EGT
 	egt_values_s egtValues; // 216
@@ -281,9 +281,12 @@ struct TunerStudioOutputChannels {
 	scaled_voltage rawTps2Primary;		// 302
 	scaled_voltage rawTps2Secondary;	// 304
 
-	scaled_channel<uint16_t> knockCount;
+	scaled_channel<uint16_t> knockCount;// 306
 
-	uint8_t unusedAtTheEnd[30]; // we have some unused bytes to allow compatible TS changes
+	scaled_channel<int16_t, PACK_MULT_PERCENT> accelerationZ; // 308
+	scaled_channel<int16_t, PACK_MULT_PERCENT> accelerationRoll; // 310
+	scaled_channel<int16_t, PACK_MULT_PERCENT> accelerationYaw; // 312
+	uint8_t unusedAtTheEnd[24]; // we have some unused bytes to allow compatible TS changes
 
 	// Temporary - will remove soon
 	TsDebugChannels* getDebugChannels() {

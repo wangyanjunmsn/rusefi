@@ -185,7 +185,7 @@ static void cylinderCleanupControl(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
 #if EFI_ENGINE_CONTROL
 	bool newValue;
 	if (engineConfiguration->isCylinderCleanupEnabled) {
-		newValue = !engine->rpmCalculator.isRunning() && Sensor::get(SensorType::DriverThrottleIntent).value_or(0) > CLEANUP_MODE_TPS;
+		newValue = !engine->rpmCalculator.isRunning() && Sensor::getOrZero(SensorType::DriverThrottleIntent) > CLEANUP_MODE_TPS;
 	} else {
 		newValue = false;
 	}
@@ -225,7 +225,7 @@ void Engine::periodicSlowCallback(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
 	runHardcodedFsio(PASS_ENGINE_PARAMETER_SIGNATURE);
 #endif /* EFI_FSIO */
 
-	bool acActive = updateAc(PASS_ENGINE_PARAMETER_SIGNATURE);
+	bool acActive = acState.updateAc(PASS_ENGINE_PARAMETER_SIGNATURE);
 	updateFans(acActive PASS_ENGINE_PARAMETER_SUFFIX);
 
 	updateGppwm();
@@ -323,7 +323,7 @@ void Engine::updateSwitchInputs(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
 		engine->clutchUpState = CONFIG(clutchUpPinInverted) ^ efiReadPin(CONFIG(clutchUpPin));
 	}
 	if (isBrainPinValid(CONFIG(throttlePedalUpPin))) {
-		engine->engineState.idle.throttlePedalUpState = efiReadPin(CONFIG(throttlePedalUpPin));
+		engine->idle.throttlePedalUpState = efiReadPin(CONFIG(throttlePedalUpPin));
 	}
 
 	if (isBrainPinValid(engineConfiguration->brakePedalPin)) {

@@ -92,8 +92,6 @@ EngineState::EngineState() {
 }
 
 void EngineState::updateSlowSensors(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
-	// this feeds rusEfi console Live Data
-	engine->engineState.isCrankingState = ENGINE(rpmCalculator).isCranking();
 }
 
 void EngineState::periodicFastCallback(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
@@ -222,7 +220,7 @@ void StartupFuelPumping::setPumpsCounter(int newValue) {
 
 void StartupFuelPumping::update(DECLARE_ENGINE_PARAMETER_SIGNATURE) {
 	if (GET_RPM() == 0) {
-		bool isTpsAbove50 = Sensor::get(SensorType::DriverThrottleIntent).value_or(0) >= 50;
+		bool isTpsAbove50 = Sensor::getOrZero(SensorType::DriverThrottleIntent) >= 50;
 
 		if (this->isTpsAbove50 != isTpsAbove50) {
 			setPumpsCounter(pumpsCounter + 1);
