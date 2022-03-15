@@ -68,6 +68,12 @@ void stm32_stop() {
  * Downside is that theres a limited amount of pins that can wakeup F7, and only PA0 for F4XX.
 */
 void stm32_standby() {
+efiSetPadUnused(activeConfiguration.canTxPin);
+efiSetPadUnused(activeConfiguration.canRxPin);
+efiSetPadUnused(activeConfiguration.can2TxPin);
+efiSetPadUnused(activeConfiguration.can2RxPin);
+chThdSleepMilliseconds(1);
+
 	// Don't get bothered by interrupts
 	__disable_irq();
 
